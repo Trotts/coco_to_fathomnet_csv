@@ -80,9 +80,13 @@ The script writes a CSV with the required base columns:
 
 It also appends any additional metadata fields discovered in the CSV metadata files.
 
+## Example
+
+Example input JSON and CSVs are provided in `input/`. A corresponding output CSV is provided in `output/`.
+
 ## Tests
 
-Example fixtures are provided under `input/`. Tests can be found in `tests/` and ran with:
+Tests can be found in `tests/` and ran with:
 
 ```bash
 python -m unittest discover -s tests -v
