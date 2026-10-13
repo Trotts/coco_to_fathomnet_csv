@@ -1,0 +1,5 @@
+annotation_id,groupof,occluded,truncated,userdefinedkey,imagingtype,observer
+101,true,false,false,custom-tag-1,still,observer_01
+102,false,true,true,custom-tag-2,still,observer_01
+103,true,false,false,custom-tag-3,video,observer_02
+104,false,false,true,custom-tag-4,still,observer_03

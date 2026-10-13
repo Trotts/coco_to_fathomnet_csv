@@ -1,0 +1,4 @@
+filename,url,latitude,longitude,timestamp,depth,temperature,imagingtype,observer,oxygen,pressure,salinity
+example_001.jpg,https://example.com/images/example_001.jpg,-64.1,12.3,2023-01-01T12:34:56Z,120,4.5,still,observer_01,2.1,1010,35.2
+example_002.jpg,https://example.com/images/example_002.jpg,-65.2,13.1,2023-01-02T09:15:00Z,135,5.1,video,observer_02,2.4,1020,34.8
+example_003.jpg,https://example.com/images/example_003.jpg,-63.8,11.9,2023-01-03T17:45:30Z,110,4.1,still,observer_03,1.9,1008,35.7

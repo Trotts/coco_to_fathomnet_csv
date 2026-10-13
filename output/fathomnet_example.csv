@@ -1,0 +1,5 @@
+concept,image_url,x,y,width,height,latitude,longitude,timestamp,depth,temperature,imagingtype,observer,oxygen,pressure,salinity,groupof,occluded,truncated,userdefinedkey
+Acanthaster planci,https://example.com/images/example_001.jpg,12,34,45,67,-64.1,12.3,2023-01-01T12:34:56Z,120,4.5,still,observer_01,2.1,1010,35.2,true,false,false,custom-tag-1
+Dendrogyra cylindrus,https://example.com/images/example_001.jpg,50,75,30,20,-64.1,12.3,2023-01-01T12:34:56Z,120,4.5,still,observer_01,2.1,1010,35.2,false,true,true,custom-tag-2
+Pocillopora damicornis,https://example.com/images/example_002.jpg,8,18,40,55,-65.2,13.1,2023-01-02T09:15:00Z,135,5.1,video,observer_02,2.4,1020,34.8,true,false,false,custom-tag-3
+Acanthaster planci,https://example.com/images/example_003.jpg,22,44,60,72,-63.8,11.9,2023-01-03T17:45:30Z,110,4.1,still,observer_03,1.9,1008,35.7,false,false,true,custom-tag-4

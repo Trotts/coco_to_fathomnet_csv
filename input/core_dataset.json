@@ -1,0 +1,56 @@
+{
+  "images": [
+    {
+      "id": 1,
+      "file_name": "example_001.jpg"
+    },
+    {
+      "id": 2,
+      "file_name": "example_002.jpg"
+    },
+    {
+      "id": 3,
+      "file_name": "example_003.jpg"
+    }
+  ],
+  "categories": [
+    {
+      "id": 10,
+      "name": "Acanthaster planci"
+    },
+    {
+      "id": 11,
+      "name": "Dendrogyra cylindrus"
+    },
+    {
+      "id": 12,
+      "name": "Pocillopora damicornis"
+    }
+  ],
+  "annotations": [
+    {
+      "id": 101,
+      "image_id": 1,
+      "category_id": 10,
+      "bbox": [12, 34, 45, 67]
+    },
+    {
+      "id": 102,
+      "image_id": 1,
+      "category_id": 11,
+      "bbox": [50, 75, 30, 20]
+    },
+    {
+      "id": 103,
+      "image_id": 2,
+      "category_id": 12,
+      "bbox": [8, 18, 40, 55]
+    },
+    {
+      "id": 104,
+      "image_id": 3,
+      "category_id": 10,
+      "bbox": [22, 44, 60, 72]
+    }
+  ]
+}
