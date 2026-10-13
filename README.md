@@ -65,7 +65,7 @@ Object-level metadata FathomNet accepts is:
 - `truncated`
 - `userdefinedkey`
 
-If you wish, `occluded` can be determined programmatically from the COCO JSON. This can be done by calling the `--derive-occlusion` flag, optionally with some float value between 0 and 1 as the threshold. The default is 0.5, meaning that if more than 50% of an objectpverlaps with another object, it will be marked as occluded. NOTE: If `occluded` is present in the object metadata CSV and the flag is set, the CSV values will take precedence.
+If you wish, `occluded` can be determined programmatically from the COCO JSON. This can be done by calling the `--derive-occlusion` flag, optionally with a float value between 0 and 1 as the threshold. The default is 0.5, meaning that if more than 50% of an object overlaps with another object, it will be marked as occluded. NOTE: If `occluded` is present in the object metadata CSV and the flag is set, the CSV values will take precedence.
 
 ## Output
 

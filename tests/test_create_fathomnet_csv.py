@@ -131,7 +131,6 @@ class FathomNetCsvConversionTests(unittest.TestCase):
         ]):
             args = parse_args()
             self.assertEqual(args.derive_occlusion, 0.5)
-            self.assertEqual(args.occlusion_threshold, 0.5)
 
         with patch.object(sys, "argv", [
             "create_fathomnet_csv.py",
@@ -142,7 +141,6 @@ class FathomNetCsvConversionTests(unittest.TestCase):
         ]):
             args = parse_args()
             self.assertEqual(args.derive_occlusion, 0.75)
-            self.assertEqual(args.occlusion_threshold, 0.5)
 
     def test_derive_occlusion_from_box_overlap(self):
         dataset = {

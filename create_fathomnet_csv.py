@@ -444,12 +444,6 @@ def parse_args() -> argparse.Namespace:
             "CSV values take precedence when present."
         ),
     )
-    parser.add_argument(
-        "--occlusion-threshold",
-        type=float,
-        default=0.5,
-        help="Compatibility override for the overlap threshold used with --derive-occlusion. Default: 0.5.",
-    )
     return parser.parse_args()
 
 
@@ -462,12 +456,10 @@ def main() -> None:
 
     dataset = load_json_file(args.input)
     derive_occlusion = args.derive_occlusion is not None
-    occlusion_threshold = args.occlusion_threshold
-    if args.derive_occlusion is not None:
-        occlusion_threshold = float(args.derive_occlusion)
+    occlusion_threshold = float(args.derive_occlusion) if args.derive_occlusion is not None else 0.5
 
     if not 0 <= occlusion_threshold <= 1:
-        raise ValueError("--derive-occlusion/--occlusion-threshold must be between 0 and 1")
+        raise ValueError("--derive-occlusion threshold must be between 0 and 1")
 
     row_count = convert_dataset_to_csv(
         dataset,
