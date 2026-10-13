@@ -14,7 +14,7 @@ The CSV output will contain the following base fields:
 - height: The height of the bounding box around the organism
 
 The CSV output may also contain additional optional metadata columns.
-Available optionals can be found at https://www.fathomnet.org/post/how-to-submit-localized-image-annotations-to-the-fathomnet-database
+Available optionals can be found [here](https://www.fathomnet.org/post/how-to-submit-localized-image-annotations-to-the-fathomnet-database).
 
 Image-level metadata can be supplied in a CSV file with columns as:
 filename,url,latitude,longitude,timestamp,depth,temperature,...,
