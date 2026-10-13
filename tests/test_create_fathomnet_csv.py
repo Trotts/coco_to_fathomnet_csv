@@ -1,9 +1,11 @@
 import csv
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from create_fathomnet_csv import convert_dataset_to_csv, load_json_file
+from create_fathomnet_csv import convert_dataset_to_csv, load_json_file, parse_args
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES_DIR = ROOT / "input"
@@ -119,6 +121,74 @@ class FathomNetCsvConversionTests(unittest.TestCase):
                 self.assertTrue(row["y"])
                 self.assertTrue(row["width"])
                 self.assertTrue(row["height"])
+
+    def test_derive_occlusion_single_flag_accepts_optional_threshold(self):
+        with patch.object(sys, "argv", [
+            "create_fathomnet_csv.py",
+            "--input",
+            "dataset.json",
+            "--derive-occlusion",
+        ]):
+            args = parse_args()
+            self.assertEqual(args.derive_occlusion, 0.5)
+            self.assertEqual(args.occlusion_threshold, 0.5)
+
+        with patch.object(sys, "argv", [
+            "create_fathomnet_csv.py",
+            "--input",
+            "dataset.json",
+            "--derive-occlusion",
+            "0.75",
+        ]):
+            args = parse_args()
+            self.assertEqual(args.derive_occlusion, 0.75)
+            self.assertEqual(args.occlusion_threshold, 0.5)
+
+    def test_derive_occlusion_from_box_overlap(self):
+        dataset = {
+            "images": [{"id": 1, "file_name": "example_001.jpg"}],
+            "categories": [{"id": 10, "name": "Acanthaster planci"}],
+            "annotations": [
+                {"id": 101, "image_id": 1, "category_id": 10, "bbox": [0, 0, 10, 10]},
+                {"id": 102, "image_id": 1, "category_id": 10, "bbox": [0, 0, 10, 10]},
+                {"id": 103, "image_id": 1, "category_id": 10, "bbox": [50, 50, 10, 10]},
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            output_path = Path(tmp_dir) / "derived_occlusion.csv"
+            convert_dataset_to_csv(dataset, output_path, derive_occlusion=True)
+
+            with output_path.open("r", encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+
+            self.assertEqual(rows[0]["occluded"], "true")
+            self.assertEqual(rows[1]["occluded"], "true")
+            self.assertEqual(rows[2]["occluded"], "false")
+
+            output_path_2 = Path(tmp_dir) / "derived_occlusion_threshold.csv"
+            convert_dataset_to_csv(dataset, output_path_2, derive_occlusion=True, occlusion_threshold=0.75)
+
+            with output_path_2.open("r", encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+
+            self.assertEqual(rows[0]["occluded"], "true")
+            self.assertEqual(rows[1]["occluded"], "true")
+            self.assertEqual(rows[2]["occluded"], "false")
+
+            object_metadata_path = Path(tmp_dir) / "object_metadata.csv"
+            object_metadata_path.write_text("annotation_id,occluded\n101,false\n", encoding="utf-8")
+            convert_dataset_to_csv(
+                dataset,
+                output_path,
+                object_metadata_path=object_metadata_path,
+                derive_occlusion=True,
+            )
+
+            with output_path.open("r", encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+
+            self.assertEqual(rows[0]["occluded"], "false")
 
 
 if __name__ == "__main__":

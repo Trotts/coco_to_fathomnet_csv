@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Create a CSV file to upload a COCO-formatted dataset to FathomNet.
 
 This script expects a local COCO dataset JSON file and optional image/object
@@ -110,10 +111,16 @@ class FathomNetCsvConverter:
         dataset: dict[str, Any],
         image_metadata_path: str | Path | None = None,
         object_metadata_path: str | Path | None = None,
+        derive_occlusion: bool = False,
+        occlusion_threshold: float = 0.5,
     ):
         self.dataset = dataset
         self.image_metadata_path = Path(image_metadata_path) if image_metadata_path else None
         self.object_metadata_path = Path(object_metadata_path) if object_metadata_path else None
+        self.derive_occlusion = derive_occlusion
+        if not 0 <= occlusion_threshold <= 1:
+            raise ValueError("occlusion_threshold must be between 0 and 1")
+        self.occlusion_threshold = occlusion_threshold
         self.image_by_id = {image.get("id"): image for image in dataset.get("images", []) if "id" in image}
         self.category_by_id = {
             category.get("id"): category for category in dataset.get("categories", []) if "id" in category
@@ -121,6 +128,8 @@ class FathomNetCsvConverter:
         self.image_metadata = self._load_image_metadata()
         self.object_metadata = self._load_object_metadata()
         self.optional_columns = self._discover_optional_columns()
+        if self.derive_occlusion and "occluded" not in self.optional_columns:
+            self.optional_columns.append("occluded")
         self.warned_missing_image_meta: set[str] = set()
         self.warned_missing_object_meta: set[str] = set()
 
@@ -254,8 +263,71 @@ class FathomNetCsvConverter:
             return str(image_meta["timestamp"])
         return ""
 
+    @staticmethod
+    def _bbox_overlap_ratio(box_a: list[float] | tuple[float, ...], box_b: list[float] | tuple[float, ...]) -> float:
+        """Return the IoU-style overlap ratio between two bounding boxes."""
+        if len(box_a) != 4 or len(box_b) != 4:
+            return 0.0
+
+        ax, ay, aw, ah = box_a
+        bx, by, bw, bh = box_b
+        ax2 = ax + aw
+        ay2 = ay + ah
+        bx2 = bx + bw
+        by2 = by + bh
+
+        inter_x1 = max(ax, bx)
+        inter_y1 = max(ay, by)
+        inter_x2 = min(ax2, bx2)
+        inter_y2 = min(ay2, by2)
+        inter_w = max(0.0, inter_x2 - inter_x1)
+        inter_h = max(0.0, inter_y2 - inter_y1)
+        intersection = inter_w * inter_h
+
+        area_a = aw * ah
+        area_b = bw * bh
+        union = area_a + area_b - intersection
+        if union <= 0:
+            return 0.0
+        return intersection / union
+
+    def derive_occlusion_map(self) -> dict[Any, bool]:
+        """Map annotation IDs to whether they overlap enough to count as occluded."""
+        by_image: dict[Any, list[dict[str, Any]]] = {}
+        for annotation in self.dataset.get("annotations", []):
+            image_id = annotation.get("image_id")
+            if image_id is None:
+                continue
+            by_image.setdefault(image_id, []).append(annotation)
+
+        occlusion_map: dict[Any, bool] = {}
+        for annotations in by_image.values():
+            for index, annotation in enumerate(annotations):
+                bbox = annotation.get("bbox") or [0, 0, 0, 0]
+                if len(bbox) != 4:
+                    occlusion_map[annotation.get("id")] = False
+                    continue
+
+                overlaps = any(
+                    idx != index and self._bbox_overlap_ratio(bbox, other.get("bbox") or [0, 0, 0, 0]) >= self.occlusion_threshold
+                    for idx, other in enumerate(annotations)
+                )
+                occlusion_map[annotation.get("id")] = overlaps
+
+        return occlusion_map
+
+    def resolve_occluded(self, annotation: dict[str, Any]) -> str:
+        """Derive an occlusion flag for an annotation based on overlap with other boxes."""
+        if annotation is None:
+            return "false"
+
+        occlusion_map = self.derive_occlusion_map()
+        return "true" if occlusion_map.get(annotation.get("id"), False) else "false"
+
     def iter_rows(self) -> Iterator[dict[str, Any]]:
         """Yield one row per annotation in FathomNet CSV format."""
+        derived_occlusion_map = self.derive_occlusion_map() if self.derive_occlusion else {}
+
         for annotation in self.dataset.get("annotations", []):
             image_id = annotation.get("image_id")
             image = self.image_by_id.get(image_id)
@@ -268,6 +340,8 @@ class FathomNetCsvConverter:
             image_meta = self._resolve_image_metadata(image)
             object_meta = self._resolve_object_metadata(annotation)
             merged_meta = {**image_meta, **object_meta}
+            if self.derive_occlusion and "occluded" not in merged_meta:
+                merged_meta["occluded"] = "true" if derived_occlusion_map.get(annotation.get("id"), False) else "false"
 
             row: dict[str, Any] = {
                 "concept": self.resolve_concept(annotation.get("category_id")),
@@ -279,7 +353,10 @@ class FathomNetCsvConverter:
             }
 
             for field in self.optional_columns:
-                row[field] = merged_meta.get(field, "")
+                if field == "occluded" and "occluded" in merged_meta:
+                    row[field] = merged_meta["occluded"]
+                else:
+                    row[field] = merged_meta.get(field, "")
 
             yield row
 
@@ -304,12 +381,16 @@ def convert_dataset_to_csv(
     output_path: str | Path,
     image_metadata_path: str | Path | None = None,
     object_metadata_path: str | Path | None = None,
+    derive_occlusion: bool = False,
+    occlusion_threshold: float = 0.5,
 ) -> int:
     """Convert a COCO JSON payload into a FathomNet CSV file."""
     converter = FathomNetCsvConverter(
         dataset,
         image_metadata_path=image_metadata_path,
         object_metadata_path=object_metadata_path,
+        derive_occlusion=derive_occlusion,
+        occlusion_threshold=occlusion_threshold,
     )
     return converter.write_csv(output_path)
 
@@ -351,6 +432,24 @@ def parse_args() -> argparse.Namespace:
             "This file provides object-level metadata."
         ),
     )
+    parser.add_argument(
+        "--derive-occlusion",
+        nargs="?",
+        const=0.5,
+        default=None,
+        type=float,
+        help=(
+            "Derive occluded values from overlap between annotations when they are not supplied in the "
+            "object metadata CSV. Optionally accepts a threshold from 0 to 1 (default: 0.5). "
+            "CSV values take precedence when present."
+        ),
+    )
+    parser.add_argument(
+        "--occlusion-threshold",
+        type=float,
+        default=0.5,
+        help="Compatibility override for the overlap threshold used with --derive-occlusion. Default: 0.5.",
+    )
     return parser.parse_args()
 
 
@@ -362,11 +461,21 @@ def main() -> None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
     dataset = load_json_file(args.input)
+    derive_occlusion = args.derive_occlusion is not None
+    occlusion_threshold = args.occlusion_threshold
+    if args.derive_occlusion is not None:
+        occlusion_threshold = float(args.derive_occlusion)
+
+    if not 0 <= occlusion_threshold <= 1:
+        raise ValueError("--derive-occlusion/--occlusion-threshold must be between 0 and 1")
+
     row_count = convert_dataset_to_csv(
         dataset,
         output_path,
         image_metadata_path=args.image_metadata_file,
         object_metadata_path=args.object_metadata_file,
+        derive_occlusion=derive_occlusion,
+        occlusion_threshold=occlusion_threshold,
     )
     print(f"Wrote {row_count} rows to {output_path}")
 
