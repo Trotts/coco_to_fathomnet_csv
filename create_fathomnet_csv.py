@@ -1,30 +1,18 @@
 #!/usr/bin/env python3
 """Create a CSV file to upload a COCO-formatted dataset to FathomNet.
 
-This script expects a local COCO dataset JSON file and optional image/object
-metadata CSV files. The final output CSV contains the required FathomNet fields
-plus any optional metadata columns supplied in the CSV files.
-
-The CSV output will contain the following base fields:
-
-- concept: The name of the organism morphotype
-- image_url: The URL of the image
-- x: The x coordinate of the organism in the image
-- y: The y coordinate of the organism in the image
-- width: The width of the bounding box around the organism
-- height: The height of the bounding box around the organism
-
-The CSV output may also contain additional optional metadata columns.
-Available optionals can be found [here](https://www.fathomnet.org/post/how-to-submit-localized-image-annotations-to-the-fathomnet-database).
-
-Image-level metadata can be supplied in a CSV file with columns as:
-filename,url,latitude,longitude,timestamp,depth,temperature,...,
-
-Object-level metadata can be supplied in a CSV file with columns as:
-annotation_id,groupof,occluded,truncated,userdefinedkey,...,
+This script reads a local COCO-style JSON annotation file and optionally merges
+image-level and object-level metadata from CSV files. The output contains the
+required FathomNet base fields plus any optional metadata columns provided in
+those CSV files.
 
 Usage:
-    python create_fathomnet_csv.py --input path/to/dataset.json --output path/to/output.csv --image-metadata-file path/to/image_metadata.csv --object-metadata-file path/to/object_metadata.csv
+    python create_fathomnet_csv.py \
+        --input path/to/dataset.json \
+        --output path/to/output.csv \
+        --image-metadata-file path/to/image_metadata.csv \
+        --object-metadata-file path/to/object_metadata.csv \
+        --derive-occlusion 0.5
 """
 import argparse
 import csv
